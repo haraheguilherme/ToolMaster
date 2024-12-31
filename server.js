@@ -1,77 +1,52 @@
-const express = require('express');
-const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
+const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const app = express();
-const port = 3000;
 
-// Configuração do multer para upload de arquivos
+// Configuração do armazenamento para o multer
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+  destination: function (req, file, cb) {
+    cb(null, './uploads'); // Diretório de uploads
   },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+  filename: function (req, file, cb) {
+    cb(null, file.originalname); // Nome do arquivo permanece o mesmo
   }
 });
 
-const upload = multer({ storage: storage });
+// Criando a instância do multer com a configuração de armazenamento
+const upload = multer({ storage: storage }).single('file');
 
-// Criação do diretório de uploads se não existir
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
+// Rota para o processamento de vídeo
+module.exports = (req, res) => {
+  // Chamar o middleware de upload do multer
+  upload(req, res, function (err) {
+    if (err) {
+      return res.status(500).send("Erro ao fazer upload do arquivo.");
+    }
 
-// Rota para upload e compressão de vídeo
-app.post('/compress-video', upload.single('video'), (req, res) => {
-  const inputFile = req.file.path;
-  const outputFile = 'uploads/compressed-' + req.file.filename;
+    // Garantir que um arquivo tenha sido enviado
+    if (!req.file) {
+      return res.status(400).send("Nenhum arquivo foi enviado.");
+    }
 
-  ffmpeg(inputFile)
-    .videoBitrate(1000)  // Configuração para taxa de bits (1 Mbps)
-    .on('end', () => {
-      res.download(outputFile, (err) => {
-        if (err) {
-          console.log("Erro ao enviar arquivo", err);
-        }
-        fs.unlinkSync(inputFile);
-        fs.unlinkSync(outputFile);
-      });
-    })
-    .on('error', (err) => {
-      console.log("Erro na compressão de vídeo:", err);
-      res.status(500).send("Erro na compressão do vídeo");
-    })
-    .save(outputFile);
-});
+    const videoFile = req.file;
+    const outputFile = path.join(__dirname, '..', 'uploads', 'compressed-' + videoFile.filename);
 
-// Rota para upload e compressão de áudio
-app.post('/compress-audio', upload.single('audio'), (req, res) => {
-  const inputFile = req.file.path;
-  const outputFile = 'uploads/compressed-' + req.file.filename;
-
-  ffmpeg(inputFile)
-    .audioBitrate(128)  // Configuração para taxa de bits do áudio (128 kbps)
-    .on('end', () => {
-      res.download(outputFile, (err) => {
-        if (err) {
-          console.log("Erro ao enviar arquivo", err);
-        }
-        fs.unlinkSync(inputFile);
-        fs.unlinkSync(outputFile);
-      });
-    })
-    .on('error', (err) => {
-      console.log("Erro na compressão de áudio:", err);
-      res.status(500).send("Erro na compressão do áudio");
-    })
-    .save(outputFile);
-});
-
-// Servindo o frontend
-app.use(express.static('public'));
-
-app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
-});
+    // Usando ffmpeg para comprimir o vídeo
+    ffmpeg()
+      .input(videoFile.path) // Caminho do arquivo enviado
+      .videoBitrate(1000) // Definir bitrate de vídeo
+      .on('end', () => {
+        // Após o processamento, enviar o arquivo comprimido para download
+        res.download(outputFile, () => {
+          // Excluir o arquivo comprimido após o download
+          fs.unlinkSync(outputFile);
+          fs.unlinkSync(videoFile.path); // Também excluir o arquivo original
+        });
+      })
+      .on('error', (err) => {
+        res.status(500).send('Erro ao processar o vídeo: ' + err.message);
+      })
+      .save(outputFile); // Salvar o arquivo comprimido no diretório de uploads
+  });
+};

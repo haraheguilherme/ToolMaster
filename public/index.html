@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compressor de Vídeo e Áudio</title>
+</head>
+<body>
+  <h1>Compressor de Vídeo e Áudio</h1>
+
+  <!-- Formulário para Compressão de Vídeo -->
+  <h2>Comprimir Vídeo</h2>
+  <form id="video-form" enctype="multipart/form-data">
+    <input type="file" name="file" accept="video/*" required />
+    <button type="submit">Comprimir Vídeo</button>
+  </form>
+
+  <!-- Formulário para Compressão de Áudio -->
+  <h2>Comprimir Áudio</h2>
+  <form id="audio-form" enctype="multipart/form-data">
+    <input type="file" name="file" accept="audio/*" required />
+    <button type="submit">Comprimir Áudio</button>
+  </form>
+
+  <script>
+    // Função para lidar com o envio do formulário de vídeo
+    document.getElementById('video-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      fetch('/compress-video', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'video_comprimido.mp4';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => alert('Erro ao comprimir vídeo: ' + error));
+    });
+
+    // Função para lidar com o envio do formulário de áudio
+    document.getElementById('audio-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      fetch('/compress-audio', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'audio_comprimido.mp3';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => alert('Erro ao comprimir áudio: ' + error));
+    });
+  </script>
+</body>
+</html>
