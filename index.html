@@ -1,1 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compressor de Vídeo e Áudio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        .container {
+            width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        input[type="file"], input[type="number"], button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .output {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Compressor de Vídeo e Áudio</h1>
 
+        <!-- Formulário para vídeo -->
+        <h3>Comprimir Vídeo</h3>
+        <input type="file" id="videoFile" accept="video/*">
+        <button onclick="compressVideo()">Comprimir Vídeo</button>
+
+        <!-- Formulário para áudio -->
+        <h3>Comprimir Áudio</h3>
+        <input type="file" id="audioFile" accept="audio/*">
+        <button onclick="compressAudio()">Comprimir Áudio</button>
+
+        <div class="output" id="output"></div>
+    </div>
+
+    <script>
+        function compressVideo() {
+            const videoFile = document.getElementById('videoFile').files[0];
+            if (!videoFile) {
+                alert("Por favor, selecione um vídeo!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('video', videoFile);
+
+            fetch('/compress-video', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = "video_comprimido.mp4";
+                link.click();
+            })
+            .catch(error => {
+                document.getElementById('output').innerText = "Erro na compressão do vídeo!";
+                console.error("Erro:", error);
+            });
+        }
+
+        function compressAudio() {
+            const audioFile = document.getElementById('audioFile').files[0];
+            if (!audioFile) {
+                alert("Por favor, selecione um áudio!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', audioFile);
+
+            fetch('/compress-audio', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = "audio_comprimido.mp3";
+                link.click();
+            })
+            .catch(error => {
+                document.getElementById('output').innerText = "Erro na compressão do áudio!";
+                console.error("Erro:", error);
+            });
+        }
+    </script>
+</body>
+</html>
